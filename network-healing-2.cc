@@ -32,8 +32,6 @@ void CheckEnergy(ns3::energy::EnergySourceContainer sources)
 
             Ptr<Node> node = NodeList::GetNode(id);
 
-            std::cout << "[HEALING] Node " << id << " disabled (Energy=" << energy << "J)\n";
-
             for (uint32_t j = 0; j < node->GetNDevices(); j++)
             {
                 node->GetDevice(j)->SetReceiveCallback(
@@ -45,8 +43,9 @@ void CheckEnergy(ns3::energy::EnergySourceContainer sources)
     Simulator::Schedule(Seconds(2.0), &CheckEnergy, sources);
 }
 
-void RunSim(uint32_t numNodes, uint32_t totalPackets)
+void RunSim(uint32_t numNodes)
 {
+    uint32_t totalPackets = 500;
     double simTime = 20.0;
     deadNodes.clear();
 
@@ -119,7 +118,7 @@ void RunSim(uint32_t numNodes, uint32_t totalPackets)
 
         auto sinkApp = sink.Install(nodes.Get(dst));
         sinkApp.Start(Seconds(0.5));
-        sinkApp.Stop(Seconds(20.0));
+        sinkApp.Stop(Seconds(simTime));
 
         UdpClientHelper client(interfaces.GetAddress(dst), port);
         client.SetAttribute("MaxPackets", UintegerValue(packetsPerFlow));
@@ -128,15 +127,15 @@ void RunSim(uint32_t numNodes, uint32_t totalPackets)
 
         auto app = client.Install(nodes.Get(src));
         app.Start(Seconds(1.0));
-        app.Stop(Seconds(20.0));
+        app.Stop(Seconds(simTime));
     }
 
-    AnimationInterface anim("anim-10.xml");
+    AnimationInterface anim("anim-" + std::to_string(numNodes) + ".xml");
 
     FlowMonitorHelper flowmon;
     Ptr<FlowMonitor> monitor = flowmon.InstallAll();
 
-    Simulator::Stop(Seconds(20.0));
+    Simulator::Stop(Seconds(simTime));
     Simulator::Run();
 
     monitor->CheckForLostPackets();
@@ -156,13 +155,10 @@ void RunSim(uint32_t numNodes, uint32_t totalPackets)
     double pdr = (tx > 0) ? ((double)rx / tx * 100) : 0;
     double avgDelay = (rx > 0) ? (delay / rx) : 0;
     double avgJitter = (rx > 0) ? (jitter / rx) : 0;
-    double throughput = (rx * 128 * 8) / (20.0 * 1000);
+    double throughput = (rx * 128 * 8) / (simTime * 1000);
 
-    std::cout << "\n----- Simulation Results -----\n";
-    std::cout << "Nodes = 20\n";
-    std::cout << "Packets Sent = " << tx << "\n";
-    std::cout << "Packets Received = " << rx << "\n";
-    std::cout << "PDR = " << pdr << " %\n";
+    std::cout << "\nNodes = " << numNodes << "\n";
+    std::cout << "PDR = " << pdr << "\n";
     std::cout << "Delay = " << avgDelay << "\n";
     std::cout << "Jitter = " << avgJitter << "\n";
     std::cout << "Throughput = " << throughput << "\n";
@@ -172,8 +168,6 @@ void RunSim(uint32_t numNodes, uint32_t totalPackets)
 
 int main()
 {
-    uint32_t packets;
-    std::cin >> packets;
-    RunSim(20, packets);
+    RunSim(20);
     return 0;
 }
