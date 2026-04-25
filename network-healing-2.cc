@@ -32,6 +32,9 @@ void CheckEnergy(ns3::energy::EnergySourceContainer sources)
 
             Ptr<Node> node = NodeList::GetNode(id);
 
+            std::cout << "[HEALING] Node " << id
+                      << " disabled (Energy=" << energy << "J)\n";
+
             for (uint32_t j = 0; j < node->GetNDevices(); j++)
             {
                 node->GetDevice(j)->SetReceiveCallback(
@@ -43,9 +46,8 @@ void CheckEnergy(ns3::energy::EnergySourceContainer sources)
     Simulator::Schedule(Seconds(2.0), &CheckEnergy, sources);
 }
 
-void RunSim(uint32_t numNodes)
+void RunSim(uint32_t numNodes, uint32_t totalPackets)
 {
-    uint32_t totalPackets = 500;
     double simTime = 20.0;
     deadNodes.clear();
 
@@ -132,6 +134,14 @@ void RunSim(uint32_t numNodes)
 
     AnimationInterface anim("anim-" + std::to_string(numNodes) + ".xml");
 
+    anim.SetMobilityPollInterval(Seconds(0.5));
+
+    for (uint32_t i = 0; i < numNodes; i++)
+    {
+        anim.UpdateNodeDescription(i, "N" + std::to_string(i));
+        anim.UpdateNodeColor(i, 255, 0, 0);
+    }
+
     FlowMonitorHelper flowmon;
     Ptr<FlowMonitor> monitor = flowmon.InstallAll();
 
@@ -157,17 +167,26 @@ void RunSim(uint32_t numNodes)
     double avgJitter = (rx > 0) ? (jitter / rx) : 0;
     double throughput = (rx * 128 * 8) / (simTime * 1000);
 
-    std::cout << "\nNodes = " << numNodes << "\n";
-    std::cout << "PDR = " << pdr << "\n";
-    std::cout << "Delay = " << avgDelay << "\n";
-    std::cout << "Jitter = " << avgJitter << "\n";
-    std::cout << "Throughput = " << throughput << "\n";
+    std::cout << "\n----- Simulation Results -----\n";
+    std::cout << "Nodes = " << numNodes << "\n";
+    std::cout << "Packets Sent = " << tx << "\n";
+    std::cout << "Packets Received = " << rx << "\n";
+    std::cout << "Packet Delivery Ratio (PDR) = " << pdr << " %\n";
+    std::cout << "End-to-End Delay = " << avgDelay << " sec\n";
+    std::cout << "Average Jitter = " << avgJitter << " sec\n";
+    std::cout << "Throughput = " << throughput << " Kbps\n";
 
     Simulator::Destroy();
 }
 
 int main()
 {
-    RunSim(20);
+    uint32_t totalPackets;
+
+    std::cout << "Enter total packets: ";
+    std::cin >> totalPackets;
+
+    RunSim(20, totalPackets);
+
     return 0;
 }
