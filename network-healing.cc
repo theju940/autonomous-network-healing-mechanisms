@@ -187,8 +187,6 @@ int main()
     std::cin >> totalPackets;
 
     RunSim(10, totalPackets);
-    RunSim(20, totalPackets);
-    RunSim(30, totalPackets);
 
     return 0;
 }
